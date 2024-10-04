@@ -1,0 +1,23 @@
+<div class="url-checker">
+    <h2>URL Checker</h2>
+  
+    <!-- Input field with two-way binding -->
+    <input
+      [formControl]="urlControl"
+      type="text"
+      placeholder="Enter URL"
+      class="url-input"
+    />
+  
+    <!-- Validation Error -->
+    <p *ngIf="isValidUrl === false" class="error-message">Invalid URL format.</p>
+  
+    <!-- Loading indicator -->
+    <p *ngIf="loading">Checking URL...</p>
+  
+    <!-- Display check results -->
+    <p *ngIf="checkResult">
+      The URL {{ checkResult?.exists ? 'exists and is a ' + checkResult?.type : 'does not exist.' }}
+    </p>
+  </div>
+  
