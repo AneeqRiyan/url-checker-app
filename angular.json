@@ -33,6 +33,7 @@
           },
           "configurations": {
             "production": {
+              "baseHref": "dist/url-checker-app",
               "budgets": [
                 {
                   "type": "initial",

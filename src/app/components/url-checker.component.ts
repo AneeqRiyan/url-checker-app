@@ -1,56 +1,70 @@
-import { Component } from '@angular/core';
-import { ReactiveFormsModule, FormControl } from '@angular/forms';
-import { CommonModule } from '@angular/common'; // <-- Add this import
-import { MockServerService } from '../services/mock-server.service';
-import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
-import { Observable, of } from 'rxjs';
+import { Component, OnInit } from '@angular/core';
+import { FormControl } from '@angular/forms';
+import { debounceTime, switchMap, distinctUntilChanged } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 @Component({
   selector: 'app-url-checker',
   templateUrl: './url-checker.component.html',
-  styleUrls: ['./url-checker.component.css'],
-  standalone: true,
-  imports: [ReactiveFormsModule, CommonModule], // <-- Add CommonModule here
+  styleUrls: ['./url-checker.component.css']
 })
-export class UrlCheckerComponent {
+export class UrlCheckerComponent implements OnInit {
   urlControl = new FormControl('');
   isValidUrl: boolean | null = null;
-  checkResult: { exists: boolean; type: string | null } | null = null;
   loading = false;
+  checkResult: { exists: boolean; type: string } | null = null;
 
-  private urlPattern = new RegExp('^(https?:\\/\\/)?([\\da-z.-]+)\\.([a-z.]{2,6})([\\/\\w .-]*)*\\/?$');
+  constructor() {}
 
-  constructor(private mockServer: MockServerService) {
+  ngOnInit(): void {
+    // Immediate validation check for URL format
+    this.urlControl.valueChanges
+      .pipe(distinctUntilChanged())
+      .subscribe((url) => {
+        this.isValidUrl = this.validateUrl(url);  // Immediate URL validity check
+        this.loading = false;  // Stop the loading spinner
+        this.checkResult = null;  // Clear previous result immediately
+      });
+
+    // Debounced server request for existence check
     this.urlControl.valueChanges
       .pipe(
-        debounceTime(500),
+        debounceTime(500),  // Debounce the server check
         distinctUntilChanged(),
-        switchMap((url: string | null) => {
-          if (url === null) {
-            return of(null);
+        switchMap((url) => {
+          if (this.isValidUrl) {
+            this.loading = true;  // Start the loading spinner
+            return this.handleUrlCheck(url);  // Only check if the URL is valid
+          } else {
+            return of(null);  // Skip existence check for invalid URLs
           }
-          return this.handleUrlCheck(url);
         })
       )
-      .subscribe();
+      .subscribe((result) => {
+        this.loading = false;  // Stop the loading spinner
+        this.checkResult = result;  // Update the result with server response
+      });
   }
 
-  handleUrlCheck(url: string): Observable<any> {
-    this.isValidUrl = this.urlPattern.test(url);
+  validateUrl(url: string | null): boolean | null {
+    if (!url) return null;  // If the input is empty, don't mark it as invalid
+    const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/;  // A basic regex for URL validation
+    return urlPattern.test(url);
+  }
 
-    if (this.isValidUrl) {
-      this.loading = true;
-      return this.mockServer.checkUrlExists(url).pipe(
-        debounceTime(500),
-        switchMap((response) => {
-          this.loading = false;
-          this.checkResult = response;
-          return of(response);
-        })
-      );
+  handleUrlCheck(url: string | null) {
+    if (!url) return of({ exists: false, type: '' });
+
+    // Simulate file or folder existence based on the URL pattern
+    const folderPattern = /folder|\/$/; // URL ending with a slash
+    const filePattern = /file|\.(html|png|jpg|pdf|txt|doc|css|js)$/; // Common file extensions
+
+    if (folderPattern.test(url)) {
+      return of({ exists: true, type: 'folder' });
+    } else if (filePattern.test(url)) {
+      return of({ exists: true, type: 'file' });
     } else {
-      this.checkResult = null;
-      return of(null);
+      return of({ exists: false, type: '' });
     }
   }
 }

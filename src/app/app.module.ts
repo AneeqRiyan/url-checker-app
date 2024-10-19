@@ -6,12 +6,8 @@ import { UrlCheckerComponent } from './components/url-checker.component'; // Imp
 import { AppComponent } from './app.component'; // Import AppComponent
 
 @NgModule({
-  imports: [
-    BrowserModule,
-    ReactiveFormsModule,
-    AppComponent // Standalone components should be imported, not declared
-  ],
-  providers: [],
-  bootstrap: [AppComponent] // Ensure bootstrap remains the same
+  declarations: [AppComponent, UrlCheckerComponent], // Declare components here
+  imports: [BrowserModule, ReactiveFormsModule], // Import necessary modules
+  bootstrap: [AppComponent]
 })
-export class AppModule { }
+export class AppModule {}
